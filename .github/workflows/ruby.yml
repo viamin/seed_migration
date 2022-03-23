@@ -22,8 +22,12 @@ jobs:
         env:
           DB: mysql
           MYSQL_ROOT_PASSWORD: password
-        options: --health-cmd "mysqladmin ping" --health-interval 10s --health-timeout
-          5s --health-retries 5
+          MYSQL_PASSWORD: password
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
         ports:
         - 3306:3306
     strategy:
@@ -38,6 +42,7 @@ jobs:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: mysql
       MYSQL_ROOT_PASSWORD: password
+      MYSQL_PASSWORD: password
       RAILS_ENV: test
     steps:
     - uses: actions/checkout@v2
@@ -51,7 +56,7 @@ jobs:
         mysql -e 'create database IF NOT EXISTS test;' -u root --password=password -P 3306 -h 127.0.0.1
     - name: Run tests
       run: |
-        bundle exec rake app:db:create app:db:setup
+        bundle exec rake app:db:setup
         bundle exec rspec spec/
   test_pg:
     runs-on: ubuntu-latest
@@ -99,7 +104,7 @@ jobs:
         PGPASSWORD=postgres psql -c 'create database test;' -U postgres -p 5432 -h localhost
     - name: Run tests
       run: |
-        bundle exec rake app:db:create app:db:setup
+        bundle exec rake app:db:setup
         bundle exec rspec spec/
   test_sqlite:
     runs-on: ubuntu-latest
@@ -124,5 +129,5 @@ jobs:
         bundler-cache: true
     - name: Run tests
       run: |
-        bundle exec rake app:db:create app:db:setup
+        bundle exec rake app:db:setup
         bundle exec rspec spec/
