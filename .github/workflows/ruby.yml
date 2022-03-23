@@ -51,7 +51,7 @@ jobs:
     - name: Run tests
       run: |
         bundle exec rake app:db:create app:db:setup
-        bundle exec rspec
+        bundle exec rspec spec/
   test_pg:
     runs-on: ubuntu-latest
     services:
@@ -84,6 +84,7 @@ jobs:
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: postgresql
+      POSTGRES_PASSWORD: postgres
     steps:
     - uses: actions/checkout@v2
     - name: Install ruby
@@ -99,7 +100,7 @@ jobs:
     - name: Run tests
       run: |
         bundle exec rake app:db:create app:db:setup
-        bundle exec rspec
+        bundle exec rspec spec/
   test_sqlite:
     runs-on: ubuntu-latest
     strategy:
@@ -123,4 +124,4 @@ jobs:
     - name: Run tests
       run: |
         bundle exec rake app:db:create app:db:setup
-        bundle exec rspec
+        bundle exec rspec spec/
