@@ -30,11 +30,11 @@ jobs:
       matrix:
         include:
         - ruby: 2.6.9
-          gemfile: Gemfile.rails.5.2-stable
+          gemfile: gemfiles/Gemfile.rails.5.2-stable
         - ruby: 3.0.3
-          gemfile: Gemfile.rails.6.1-stable
+          gemfile: gemfiles/Gemfile.rails.6.1-stable
         - ruby: 3.1.1
-          gemfile: Gemfile.rails.7.0-stable
+          gemfile: gemfiles/Gemfile.rails.7.0-stable
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: mysql
@@ -67,17 +67,17 @@ jobs:
       matrix:
         include:
         - ruby: 2.6.9
-          gemfile: Gemfile.rails-5.2-stable
+          gemfile: gemfiles/Gemfile.rails-5.2-stable
         - ruby: 2.6.9
-          gemfile: Gemfile.rails-6.1-stable
+          gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 2.7.5
-          gemfile: Gemfile.rails-6.1-stable
+          gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 2.7.5
-          gemfile: Gemfile.rails-7.0-stable
+          gemfile: gemfiles/Gemfile.rails-7.0-stable
         - ruby: 3.0.3
-          gemfile: Gemfile.rails-6.1-stable
+          gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 3.1.1
-          gemfile: Gemfile.rails-7.0-stable
+          gemfile: gemfiles/Gemfile.rails-7.0-stable
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: postgresql
@@ -102,7 +102,7 @@ jobs:
       matrix:
         include:
         - ruby: 2.6.9
-          gemfile: Gemfile.rails-5.2-stable
+          gemfile: gemfiles/Gemfile.rails-5.2-stable
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: sqlite
