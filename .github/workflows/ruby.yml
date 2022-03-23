@@ -49,7 +49,9 @@ jobs:
       run: |
         mysql -e 'create database IF NOT EXISTS test;' -u root --password=password -P 3306 -h 127.0.0.1
     - name: Run tests
-      run: bundle exec rspec
+      run: |
+        bundle exec rake app:db:create app:db:setup
+        bundle exec rspec
   test_pg:
     runs-on: ubuntu-latest
     services:
@@ -58,10 +60,13 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
           DB: postgresql
-        options: "--health-cmd pg_isready --health-interval 10s --health-timeout 5s
-          --health-retries 5"
+        options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5
         ports:
-        - 5432:5432
+          - 5432:5432
     strategy:
       fail-fast: false
       matrix:
@@ -92,7 +97,9 @@ jobs:
         sudo apt-get install -y postgresql-client
         PGPASSWORD=postgres psql -c 'create database test;' -U postgres -p 5432 -h localhost
     - name: Run tests
-      run: bundle exec rspec
+      run: |
+        bundle exec rake app:db:create app:db:setup
+        bundle exec rspec
   test_sqlite:
     runs-on: ubuntu-latest
     strategy:
@@ -114,4 +121,6 @@ jobs:
         ruby-version: "${{ matrix.ruby }}"
         bundler-cache: true
     - name: Run tests
-      run: bundle exec rspec
+      run: |
+        bundle exec rake app:db:create app:db:setup
+        bundle exec rspec
