@@ -1,5 +1,5 @@
 require "simplecov"
-SimpleCov.start
+SimpleCov.start unless ENV["CI"]
 
 ENV["RAILS_ENV"] = "test"
 
