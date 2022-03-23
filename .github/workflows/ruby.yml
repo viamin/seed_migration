@@ -30,11 +30,11 @@ jobs:
       matrix:
         include:
         - ruby: 2.6.9
-          gemfile: gemfiles/Gemfile.rails.5.2-stable
+          gemfile: gemfiles/Gemfile.rails-5.2-stable
         - ruby: 3.0.3
-          gemfile: gemfiles/Gemfile.rails.6.1-stable
+          gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 3.1.1
-          gemfile: gemfiles/Gemfile.rails.7.0-stable
+          gemfile: gemfiles/Gemfile.rails-7.0-stable
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: mysql
@@ -115,22 +115,3 @@ jobs:
         bundler-cache: true
     - name: Run tests
       run: bundle exec rspec
-
-
-
-# jobs:
-#   test:
-#     runs-on: ubuntu-latest
-#     strategy:
-#       matrix:
-#         ruby-version: ['2.6', '2.7', '3.0']
-
-#     steps:
-#     - uses: actions/checkout@v2
-#     - name: Set up Ruby
-#       uses: ruby/setup-ruby@1
-#       with:
-#         ruby-version: ${{ matrix.ruby-version }}
-#         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
-#     - name: Run tests
-#       run: bundle exec rake
