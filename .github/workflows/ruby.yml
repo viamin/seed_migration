@@ -68,8 +68,6 @@ jobs:
         include:
         - ruby: 2.6.9
           gemfile: gemfiles/Gemfile.rails-5.2-stable
-        - ruby: 2.6.9
-          gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 2.7.5
           gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 2.7.5
@@ -101,8 +99,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ruby: 2.6.9
-          gemfile: gemfiles/Gemfile.rails-5.2-stable
+        - ruby: 2.7.5
+          gemfile: gemfiles/Gemfile.rails-6.1-stable
+        - ruby: 3.1.1
+          gemfile: gemfiles/Gemfile.rails-7.0-stable
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: sqlite

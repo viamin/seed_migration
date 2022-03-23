@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-gemspec
+gemspec path: '..'
 
 gem "rails", ">= 7.0.0"
 gem "rack", ">= 1.4.5"
