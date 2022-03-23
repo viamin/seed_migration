@@ -38,6 +38,7 @@ jobs:
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: mysql
+      RAILS_ENV: test
     steps:
     - uses: actions/checkout@v2
     - name: Install ruby
@@ -85,6 +86,7 @@ jobs:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: postgresql
       POSTGRES_PASSWORD: postgres
+      RAILS_ENV: test
     steps:
     - uses: actions/checkout@v2
     - name: Install ruby
@@ -114,6 +116,7 @@ jobs:
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: sqlite
+      RAILS_ENV: test
     steps:
     - uses: actions/checkout@v2
     - name: Install ruby
