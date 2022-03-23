@@ -29,8 +29,6 @@ jobs:
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: mysql
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_PASSWORD: password
       RAILS_ENV: test
     steps:
     - uses: actions/checkout@v2

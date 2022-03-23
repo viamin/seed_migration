@@ -5,7 +5,7 @@ sqlite: &sqlite
 mysql: &mysql
   adapter: mysql2
   username: root
-  password: <%= ENV['MYSQL_ROOT_PASSWORD'] %>
+  password: 
   database: seed-migration-<%= Rails.env %>
 
 postgresql: &postgresql
