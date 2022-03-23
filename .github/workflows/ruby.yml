@@ -29,8 +29,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ruby: 2.6.9
-          gemfile: gemfiles/Gemfile.rails-5.2-stable
         - ruby: 3.0.3
           gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 3.1.1
@@ -38,6 +36,7 @@ jobs:
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: mysql
+      MYSQL_PASSWORD: password
       RAILS_ENV: test
     steps:
     - uses: actions/checkout@v2
@@ -72,8 +71,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ruby: 2.6.9
-          gemfile: gemfiles/Gemfile.rails-5.2-stable
         - ruby: 2.7.5
           gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 2.7.5
