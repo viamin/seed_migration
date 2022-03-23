@@ -55,7 +55,7 @@ jobs:
         bundler-cache: true
     - name: Setup database
       run: |
-        sudo systemctl start mysql.service
+        sudo /etc/init.d/mysql start
     - name: Run tests
       run: |
         bundle exec rake app:db:setup
