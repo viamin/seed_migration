@@ -16,30 +16,16 @@ on:
 jobs:
   test_mysql:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:5.7
-        env:
-          DB: mysql
-          MYSQL_USER: root
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_PASSWORD: password
-          MYSQL_DATABASE: seed-migration-test
-        options: >-
-          --health-cmd "mysqladmin ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 3306:3306
     strategy:
       fail-fast: false
       matrix:
         include:
         - ruby: 3.0.3
           gemfile: gemfiles/Gemfile.rails-6.1-stable
+          mysql-version: 5.7
         - ruby: 3.1.1
           gemfile: gemfiles/Gemfile.rails-7.0-stable
+          mysql-version: 8.0
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: mysql
@@ -54,6 +40,9 @@ jobs:
         ruby-version: "${{ matrix.ruby }}"
         bundler-cache: true
     - name: Setup database
+      uses: ankane/setup-mysql@v1
+      with:
+        mysql-version: ${{ matrix.mysql-version }}
       run: |
         sudo /etc/init.d/mysql start
     - name: Run tests
