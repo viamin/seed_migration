@@ -1,11 +1,11 @@
-sqlite: &sqlite
+sqlite3: &sqlite3
   adapter: sqlite3
   database: db/<%= Rails.env %>.sqlite3
 
 mysql: &mysql
   adapter: mysql2
   username: root
-  password: 
+  password:
   database: seed-migration-<%= Rails.env %>
 
 postgresql: &postgresql
@@ -19,7 +19,7 @@ defaults: &defaults
   pool: 5
   timeout: 5000
   host: localhost
-  <<: *<%= ENV['DB'] || "postgresql" %>
+  <<: *<%= ENV.fetch('DB', "sqlite3") %>
 
 development:
   <<: *defaults

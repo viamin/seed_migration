@@ -151,6 +151,19 @@ describe SeedMigration::Migrator do
         expect(output).to contain(@files.count - 1).occurrences_of(" up ")
         expect(output).to contain(1).occurrences_of(" down ")
       end
+
+      context "when SILENT_MIGRATION is set in the environment" do
+        before { allow(ENV).to receive(:fetch).with("SILENT_MIGRATION", false).and_return("true") }
+
+        it "does not output any statuses" do
+          output = capture_stdout do
+          SeedMigration::Migrator.set_logger
+          SeedMigration::Migrator.display_migrations_status
+        end
+
+        expect(output).not_to contain(@files.count).occurrences_of(" up ")
+        end
+      end
     end
   end
 

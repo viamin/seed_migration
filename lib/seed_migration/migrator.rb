@@ -4,6 +4,7 @@ require "pathname"
 module SeedMigration
   class Migrator
     SEEDS_FILE_PATH = Rails.root.join("db", "seeds.rb")
+    STDNULL = File.open(File::NULL, 'w')
 
     def self.data_migration_directory
       Rails.root.join("db", SeedMigration.migrations_path)
@@ -142,7 +143,9 @@ module SeedMigration
       @logger
     end
 
-    def self.set_logger(new_logger = Logger.new($stdout))
+    def self.set_logger(new_logger = nil)
+      output = ENV.fetch("SILENT_MIGRATION", false) ? STDNULL: $stdout
+      new_logger = Logger.new(output)
       @logger = new_logger
     end
 
@@ -158,8 +161,6 @@ module SeedMigration
     end
 
     def announce(text)
-      return if ENV["SILENT_MIGRATION"]
-
       length = [0, 75 - text.length].max
       SeedMigration::Migrator.logger.info "== %s %s" % [text, "=" * length]
     end
