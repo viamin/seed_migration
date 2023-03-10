@@ -4,7 +4,7 @@ require "pathname"
 module SeedMigration
   class Migrator
     SEEDS_FILE_PATH = Rails.root.join("db", "seeds.rb")
-    STDNULL = File.open(File::NULL, 'w')
+    STDNULL = File.open(File::NULL, "w")
 
     def self.data_migration_directory
       Rails.root.join("db", SeedMigration.migrations_path)
@@ -144,7 +144,7 @@ module SeedMigration
     end
 
     def self.set_logger(new_logger = nil)
-      output = ENV.fetch("SILENT_MIGRATION", false) ? STDNULL: $stdout
+      output = ENV.fetch("SILENT_MIGRATION", false) ? STDNULL : $stdout
       new_logger = Logger.new(output)
       @logger = new_logger
     end
@@ -307,7 +307,7 @@ module SeedMigration
 
     class PendingMigrationError < StandardError
       def initialize
-        super("Data migrations are pending. To resolve this issue, "\
+        super("Data migrations are pending. To resolve this issue, " \
           "run the following:\n\n\trake seed:migrate\n")
       end
     end

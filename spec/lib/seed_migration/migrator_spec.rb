@@ -157,11 +157,11 @@ describe SeedMigration::Migrator do
 
         it "does not output any statuses" do
           output = capture_stdout do
-          SeedMigration::Migrator.set_logger
-          SeedMigration::Migrator.display_migrations_status
-        end
+            SeedMigration::Migrator.set_logger
+            SeedMigration::Migrator.display_migrations_status
+          end
 
-        expect(output).not_to contain(@files.count).occurrences_of(" up ")
+          expect(output).not_to contain(@files.count).occurrences_of(" up ")
         end
       end
     end
