@@ -1,6 +1,6 @@
 module SeedMigration
   class RegisterEntry
-    attr_reader :model, :model_name
+    attr_reader :model_name
 
     def initialize(model)
       @model_name = model.to_s
@@ -17,7 +17,7 @@ module SeedMigration
     end
 
     def hash
-      model.hash
+      model_name.hash
     end
 
     def model
