@@ -31,7 +31,7 @@ jobs:
       DB: mysql
       RAILS_ENV: test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install ruby
       uses: ruby/setup-ruby@v1
       with:
@@ -78,7 +78,7 @@ jobs:
       POSTGRES_PASSWORD: postgres
       RAILS_ENV: test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install ruby
       uses: ruby/setup-ruby@v1
       with:
@@ -108,7 +108,7 @@ jobs:
       DB: sqlite
       RAILS_ENV: test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install ruby
       uses: ruby/setup-ruby@v1
       with:
