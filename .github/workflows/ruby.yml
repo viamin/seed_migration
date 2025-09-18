@@ -20,11 +20,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ruby: 3.0.3
-          gemfile: gemfiles/Gemfile.rails-6.1-stable
-          mysql-version: 8.0
         - ruby: 3.1.1
           gemfile: gemfiles/Gemfile.rails-7.0-stable
+          mysql-version: 8.0
+        - ruby: 3.4.5
+          gemfile: gemfiles/Gemfile.rails-8.0-stable
           mysql-version: 8.0
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
@@ -64,14 +64,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ruby: 2.7.5
-          gemfile: gemfiles/Gemfile.rails-6.1-stable
-        - ruby: 2.7.5
-          gemfile: gemfiles/Gemfile.rails-7.0-stable
-        - ruby: 3.0.3
-          gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 3.1.1
           gemfile: gemfiles/Gemfile.rails-7.0-stable
+        - ruby: 3.4.5
+          gemfile: gemfiles/Gemfile.rails-8.0-stable
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: postgresql
@@ -99,10 +95,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ruby: 2.7.5
-          gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 3.1.1
           gemfile: gemfiles/Gemfile.rails-7.0-stable
+        - ruby: 3.4.5
+          gemfile: gemfiles/Gemfile.rails-8.0-stable
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: sqlite
