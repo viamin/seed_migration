@@ -251,12 +251,14 @@ describe SeedMigration::Migrator do
       end
 
       it "should output all attributes" do
-        expect(contents).to match(/(?=.*User\.create)(?=.*"id"=>)(?=.*"username"=>).*/)
+        # Allow optional spaces around => and optional bang method (create/create!)
+        expect(contents).to match(/(?=.*User\.create!?)(?=.*"id"\s*=>)(?=.*"username"\s*=>).*/)
         expect(contents).to match(/(?=.*Product\.create)(?=.*"id"=>)(?=.*"created_at"=>)(?=.*"updated_at"=>).*/)
       end
 
       it "should output attributes alphabetically ordered" do
-        expect(contents).to match(/(?=.*User\.create)(?=.*"a"=>.*"id"=>.*"username"=>).*/)
+        # Keys appear sorted alphabetically; allow spacing and optional bang
+        expect(contents).to match(/(?=.*User\.create!?)(?=.*"a"\s*=>.*"id"\s*=>.*"username"\s*=>).*/)
       end
 
       context "with strict_create option" do
@@ -281,7 +283,7 @@ describe SeedMigration::Migrator do
       end
 
       it "only outputs selected attributes" do
-        expect(contents).to match(/(?=.*User\.create)(?!.*"id"=>)(?=.*"username"=>).*/)
+        expect(contents).to match(/(?=.*User\.create!?)(?!.*"id"\s*=>)(?=.*"username"\s*=>).*/)
       end
 
       context "ignore_ids option" do
@@ -291,7 +293,7 @@ describe SeedMigration::Migrator do
         end
 
         it "doesn't output ids" do
-          expect(contents).to match(/(?=.*User\.create)(?!.*"id"=>)(?=.*"username"=>).*/)
+          expect(contents).to match(/(?=.*User\.create!?)(?!.*"id"\s*=>)(?=.*"username"\s*=>).*/)
         end
 
         it "doesn't reset the pk sequence" do
