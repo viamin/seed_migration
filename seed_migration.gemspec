@@ -18,6 +18,6 @@ Gem::Specification.new do |s|
   s.files = Dir["{app,config,db,lib}/**/*"] + ["LICENSE.txt", "Rakefile", "README.md"]
 
   s.add_development_dependency "pry"
-  s.add_development_dependency "rspec-rails", "~> 8"
+  s.add_development_dependency "rspec-rails"
   s.add_development_dependency "simplecov"
 end
