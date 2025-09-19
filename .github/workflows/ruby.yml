@@ -9,9 +9,9 @@ name: Ruby
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   test_mysql:
@@ -20,20 +20,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ruby: 3.0.3
-          gemfile: gemfiles/Gemfile.rails-6.1-stable
-          mysql-version: 8.0
         - ruby: 3.1.1
           gemfile: gemfiles/Gemfile.rails-7.0-stable
+          mysql-version: 8.0
+        - ruby: 3.4.5
+          gemfile: gemfiles/Gemfile.rails-8.0-stable
           mysql-version: 8.0
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: mysql
       RAILS_ENV: test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
     - name: Install ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@866b91cc020931c510d42e43e498a7f07d335f60
       with:
         ruby-version: "${{ matrix.ruby }}"
         bundler-cache: true
@@ -64,23 +64,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ruby: 2.7.5
-          gemfile: gemfiles/Gemfile.rails-6.1-stable
-        - ruby: 2.7.5
-          gemfile: gemfiles/Gemfile.rails-7.0-stable
-        - ruby: 3.0.3
-          gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 3.1.1
           gemfile: gemfiles/Gemfile.rails-7.0-stable
+        - ruby: 3.4.5
+          gemfile: gemfiles/Gemfile.rails-8.0-stable
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: postgresql
       POSTGRES_PASSWORD: postgres
       RAILS_ENV: test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
     - name: Install ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@866b91cc020931c510d42e43e498a7f07d335f60
       with:
         ruby-version: "${{ matrix.ruby }}"
         bundler-cache: true
@@ -99,18 +95,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ruby: 2.7.5
-          gemfile: gemfiles/Gemfile.rails-6.1-stable
         - ruby: 3.1.1
           gemfile: gemfiles/Gemfile.rails-7.0-stable
+        - ruby: 3.4.5
+          gemfile: gemfiles/Gemfile.rails-8.0-stable
     env:
       BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
       DB: sqlite
       RAILS_ENV: test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
     - name: Install ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@866b91cc020931c510d42e43e498a7f07d335f60
       with:
         ruby-version: "${{ matrix.ruby }}"
         bundler-cache: true

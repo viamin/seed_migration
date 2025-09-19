@@ -2,7 +2,7 @@ source "https://rubygems.org"
 
 gemspec path: '..'
 
-gem "rails", "~> 7.0.0"
+gem "rails", "~> 8.0.0"
 gem "rack", ">= 1.4.5"
 
 case ENV["DB"]
@@ -11,8 +11,7 @@ when "postgresql"
 when "mysql"
   gem "mysql2"
 when "sqlite"
-  # Rails 7.0 / AR 7.0 still expects sqlite3 1.4.x API
-  gem "sqlite3", "~> 1.4"
+  gem "sqlite3"
 else
   gem "sqlite3"
 end

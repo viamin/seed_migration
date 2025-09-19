@@ -1,5 +1,6 @@
 require File.expand_path("../boot", __FILE__)
 
+require "logger" # Ensure Logger constant is loaded before ActiveSupport references it (Rails 7 compatibility)
 require "rails/all"
 
 Bundler.require(*Rails.groups)
