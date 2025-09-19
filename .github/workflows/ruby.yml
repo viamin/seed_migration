@@ -31,9 +31,9 @@ jobs:
       DB: mysql
       RAILS_ENV: test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
     - name: Install ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@866b91cc020931c510d42e43e498a7f07d335f60
       with:
         ruby-version: "${{ matrix.ruby }}"
         bundler-cache: true
@@ -74,9 +74,9 @@ jobs:
       POSTGRES_PASSWORD: postgres
       RAILS_ENV: test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
     - name: Install ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@866b91cc020931c510d42e43e498a7f07d335f60
       with:
         ruby-version: "${{ matrix.ruby }}"
         bundler-cache: true
@@ -104,9 +104,9 @@ jobs:
       DB: sqlite
       RAILS_ENV: test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
     - name: Install ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@866b91cc020931c510d42e43e498a7f07d335f60
       with:
         ruby-version: "${{ matrix.ruby }}"
         bundler-cache: true

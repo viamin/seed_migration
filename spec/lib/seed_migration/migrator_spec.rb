@@ -99,7 +99,7 @@ describe SeedMigration::Migrator do
 
     describe "rake rollback" do
       it "should by default roll back one step" do
-        SeedMigration::Migrator.should_receive(:create_seed_file).once
+        expect(SeedMigration::Migrator).to receive(:create_seed_file).once
         # Run migrations
         SeedMigration::Migrator.run_new_migrations
 
@@ -109,7 +109,7 @@ describe SeedMigration::Migrator do
       end
 
       it "should roll back more than one if specified" do
-        SeedMigration::Migrator.should_receive(:create_seed_file).once
+        expect(SeedMigration::Migrator).to receive(:create_seed_file).once
         # Run migrations
         SeedMigration::Migrator.run_new_migrations
 
@@ -120,8 +120,8 @@ describe SeedMigration::Migrator do
       it "should roll back specified migration" do
         Rails::Generators.invoke("seed_migration", ["foo", 1])
         # Run the migration
-        SeedMigration::Migrator.any_instance.should_receive(:down).once
-        SeedMigration::Migrator.should_receive(:create_seed_file).once
+        expect_any_instance_of(SeedMigration::Migrator).to receive(:down).once
+        expect(SeedMigration::Migrator).to receive(:create_seed_file).once
         SeedMigration::Migrator.rollback_migrations("1_foo.rb")
       end
     end
@@ -253,7 +253,7 @@ describe SeedMigration::Migrator do
       it "should output all attributes" do
         # Allow optional spaces around => and optional bang method (create/create!)
         expect(contents).to match(/(?=.*User\.create!?)(?=.*"id"\s*=>)(?=.*"username"\s*=>).*/)
-        expect(contents).to match(/(?=.*Product\.create)(?=.*"id"=>)(?=.*"created_at"=>)(?=.*"updated_at"=>).*/)
+        expect(contents).to match(/(?=.*Product\.create!?)(?=.*"id"\s*=>)(?=.*"created_at"\s*=>)(?=.*"updated_at"\s*=>).*/)
       end
 
       it "should output attributes alphabetically ordered" do
