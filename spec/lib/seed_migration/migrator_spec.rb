@@ -245,9 +245,14 @@ describe SeedMigration::Migrator do
         expect(contents).to include("Product.create")
       end
 
-      it "only outputs registered models" do
+      it "only outputs registered models and preserves unregistered models with data (regression prevention)" do
+        # Should never include internal migration data
         expect(contents).not_to include("SeedMigration::DataMigration.create")
-        expect(contents).not_to include("UselessModel.create")
+        
+        # With the new preservation logic, UselessModel data is preserved even if not registered
+        # This prevents data loss when registrations get cleared/reset (the regression bug)
+        # But it will show a warning about the unregistered model
+        expect(contents).to include("UselessModel.create")
       end
 
       it "should output all attributes" do

@@ -242,6 +242,13 @@ module SeedMigration
         if !SeedMigration.update_seeds_file || !Rails.env.development?
           return
         end
+        
+        # Get all models that have existing seed data (preserve data from previous migrations)
+        all_seed_models = discover_models_with_seed_data
+        
+        # Check for unregistered models that have seed data
+        warn_about_unregistered_models(all_seed_models)
+        
         File.open(SEEDS_FILE_PATH, "w") do |file|
           file.write <<~EOS
             # encoding: UTF-8
@@ -258,22 +265,122 @@ module SeedMigration
 
             ActiveRecord::Base.transaction do
           EOS
-          SeedMigration.registrar.each do |register_entry|
-            register_entry.model.order("id").each do |instance|
+          
+          # Process all models that have seed data (registered + discovered)
+          all_seed_models.each do |model_class|
+            register_entry = find_or_create_register_entry(model_class)
+            
+            model_class.order("id").each do |instance|
               file.write generate_model_creation_string(instance, register_entry)
             end
 
             if !SeedMigration.ignore_ids
               file.write <<-EOS
-    ActiveRecord::Base.connection.reset_pk_sequence!('#{register_entry.model.table_name}')
+    ActiveRecord::Base.connection.reset_pk_sequence!('#{model_class.table_name}')
               EOS
             end
           end
+          
           file.write <<~EOS
             end
 
             SeedMigration::Migrator.bootstrap(#{last_migration})
           EOS
+        end
+      end
+
+      # Discover all models that have existing data and should be included in seeds.rb
+      # This preserves data from models that were registered in previous migrations
+      def discover_models_with_seed_data
+        models = Set.new
+        
+        # Add all currently registered models
+        SeedMigration.registrar.each do |register_entry|
+          models << register_entry.model
+        end
+        
+        # Add models that have existing seed-worthy data but might not be registered
+        # This prevents data loss when registrations are cleared/reset
+        discover_models_from_database.each do |model_class|
+          if model_has_seed_data?(model_class)
+            models << model_class
+          end
+        end
+        
+        models.to_a.sort_by(&:name)
+      end
+      
+      # Find models in the database that look like they contain seed data
+      def discover_models_from_database
+        models = []
+        
+        # Get all tables except Rails internal ones
+        excluded_tables = %w[
+          schema_migrations ar_internal_metadata 
+          seed_migration_data_migrations
+        ]
+        
+        ActiveRecord::Base.connection.tables.each do |table_name|
+          next if excluded_tables.include?(table_name)
+          
+          begin
+            # Try to find the corresponding model class
+            model_class = table_name.classify.constantize
+            next unless model_class < ActiveRecord::Base
+            
+            models << model_class
+          rescue NameError, LoadError
+            # Model class doesn't exist or can't be loaded, skip
+            logger.debug "Skipping table #{table_name}: corresponding model not found"
+          end
+        end
+        
+        models
+      end
+      
+      # Check if a model has data that should be preserved in seeds
+      def model_has_seed_data?(model_class)
+        # Only preserve data for models that have records
+        model_class.exists?
+      rescue => e
+        logger.warn "Could not check seed data for #{model_class.name}: #{e.message}"
+        false
+      end
+      
+      # Find existing register entry or create a default one for discovered models
+      def find_or_create_register_entry(model_class)
+        # First try to find existing registration
+        existing_entry = SeedMigration.registrar.find { |entry| entry.model == model_class }
+        return existing_entry if existing_entry
+        
+        # Create a default registration for unregistered models
+        # This preserves their data but warns the user
+        RegisterEntry.new(model_class)
+      end
+      
+      # Warn about models that have seed data but are not explicitly registered
+      def warn_about_unregistered_models(all_seed_models)
+        registered_models = SeedMigration.registrar.map(&:model).to_set
+        
+        unregistered_with_data = all_seed_models.reject { |model| registered_models.include?(model) }
+        
+        if unregistered_with_data.any?
+          model_names = unregistered_with_data.map(&:name).sort.join(", ")
+          logger.warn <<~WARNING
+            ⚠️  SEED MIGRATION WARNING: Found seed data for unregistered models: #{model_names}
+            
+            These models have data in the database but are not explicitly registered with SeedMigration.
+            Their data will be preserved in seeds.rb, but you should consider registering them explicitly:
+            
+            #{unregistered_with_data.map { |m| "  SeedMigration.register #{m.name}" }.join("\n")}
+            
+            This usually happens when:
+            1. Model registrations were cleared/reset
+            2. A migration created data but didn't register the model
+            3. Data was created outside of seed migrations
+            
+            To suppress this warning, either register these models or exclude them from seeds.rb generation.
+          WARNING
         end
       end
 
