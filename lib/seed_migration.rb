@@ -7,7 +7,7 @@ module SeedMigration
   autoload :RegisterEntry, "seed_migration/register_entry"
   autoload :DataMigration, "seed_migration/data_migration"
 
-  @@registrar = Set.new
+  @@registrar = []
   mattr_accessor :registrar
 
   class << self

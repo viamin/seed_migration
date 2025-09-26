@@ -1,12 +1,18 @@
 require "spec_helper"
 
+module Foo
+  mattr_accessor :migration_table_name
+  # class << self
+  # end
+end
+
 describe SeedMigration do
   it "is a module" do
     expect(described_class).to be_a(Module)
   end
 
-  it "has a method #registrar that is a Set" do
-    expect(described_class.registrar).to be_a_kind_of Set
+  it "has a method #registrar that is an Array" do
+    expect(described_class.registrar).to be_a_kind_of Array
   end
 
   describe ".register" do
@@ -36,12 +42,6 @@ describe SeedMigration do
       SeedMigration.unregister User
       expect(SeedMigration.registrar.map(&:model)).to include(Product)
     end
-  end
-
-  module Foo
-    mattr_accessor :migration_table_name
-    # class << self
-    # end
   end
 
   describe "configuration variables" do

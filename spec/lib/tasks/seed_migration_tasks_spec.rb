@@ -47,13 +47,13 @@ describe "Rake Tasks" do
     after { Dir.chdir "../.." }
     it "works" do
       # Explicitly pass BUNDLE_GEMFILE to system call since chdir breaks relative paths
-      bundle_gemfile = ENV['BUNDLE_GEMFILE']
-      if bundle_gemfile && !bundle_gemfile.start_with?('/')
+      bundle_gemfile = ENV["BUNDLE_GEMFILE"]
+      if bundle_gemfile && !bundle_gemfile.start_with?("/")
         # Convert relative to absolute from original working directory
         bundle_gemfile = File.expand_path("../../#{bundle_gemfile}", __dir__)
       end
-      
-      env = bundle_gemfile ? { 'BUNDLE_GEMFILE' => bundle_gemfile } : {}
+
+      env = bundle_gemfile ? {"BUNDLE_GEMFILE" => bundle_gemfile} : {}
       output = system(env, "bundle exec rake seed:migrate")
       expect(output).to eq(true)
     end

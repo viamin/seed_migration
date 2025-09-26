@@ -5,10 +5,10 @@ ENV["RAILS_ENV"] = "test"
 
 # Ensure BUNDLE_GEMFILE is an absolute path so that specs that chdir (e.g. raw rake task)
 # still reference the correct Gemfile when running `bundle exec` from a subdirectory.
-if ENV['BUNDLE_GEMFILE'] && !ENV['BUNDLE_GEMFILE'].start_with?('/')
-  repo_root = File.expand_path('..', __dir__)
-  expanded = File.expand_path(ENV['BUNDLE_GEMFILE'], repo_root)
-  ENV['BUNDLE_GEMFILE'] = expanded if File.exist?(expanded)
+if ENV["BUNDLE_GEMFILE"] && !ENV["BUNDLE_GEMFILE"].start_with?("/")
+  repo_root = File.expand_path("..", __dir__)
+  expanded = File.expand_path(ENV["BUNDLE_GEMFILE"], repo_root)
+  ENV["BUNDLE_GEMFILE"] = expanded if File.exist?(expanded)
 end
 
 require "stringio"
