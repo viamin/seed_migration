@@ -276,14 +276,13 @@ module SeedMigration
             ActiveRecord::Base.transaction do
           EOS
 
-          # Process registered models first (maintains migration order)
-          # Sort by migration version if available, otherwise preserve registration order
-          sorted_entries = SeedMigration.registrar.sort_by do |entry|
-            entry.migration_version || "99999999999999"  # Put entries without version at end
-          end
+          # Process registered models first (sorted by migration introduction order)
+          # This preserves dependency order even when registrations are in an initializer
+          sorted_models = sort_registered_models_by_migration_order
 
-          sorted_entries.each do |register_entry|
-            process_model_for_seeds(file, register_entry.model, register_entry)
+          sorted_models.each do |model_class|
+            register_entry = find_register_entry_for_model(model_class)
+            process_model_for_seeds(file, model_class, register_entry) if register_entry
           end
 
           # Process any unregistered models with data (to preserve existing data)
@@ -408,6 +407,87 @@ module SeedMigration
 
       def create_method
         SeedMigration.use_strict_create? ? "create!" : "create"
+      end
+
+      private
+
+      # Sort registered models by the order they were likely introduced in migrations
+      # This examines migration timestamps to determine dependency order
+      def sort_registered_models_by_migration_order
+        registered_models = SeedMigration.registrar.map(&:model)
+        return [] if registered_models.empty?
+
+        # Create model -> earliest_migration_timestamp mapping
+        model_timestamps = {}
+
+        registered_models.each do |model_class|
+          timestamp = find_earliest_migration_for_model(model_class)
+          model_timestamps[model_class] = timestamp
+        end
+
+        # Sort by timestamp (chronological order)
+        registered_models.sort_by { |model| model_timestamps[model] }
+      end
+
+      # Find the earliest migration timestamp that could have introduced this model
+      # This preserves migration dependency order
+      def find_earliest_migration_for_model(model_class)
+        table_name = model_class.table_name
+
+        # Get all executed migrations in chronological order
+        executed_migrations = SeedMigration::DataMigration.order(:version).pluck(:version)
+
+        # Try to find which migration likely created this table
+        # Look for migration files that might have created this model
+        migration_files = get_migration_files
+
+        migration_files.each do |file_path|
+          filename = File.basename(file_path, ".rb")
+          timestamp = filename.split("_").first
+
+          # Skip if this migration hasn't been executed
+          next unless executed_migrations.include?(timestamp)
+
+          # Check if this migration file mentions this model or table
+          if migration_mentions_model?(file_path, model_class, table_name)
+            return timestamp
+          end
+        end
+
+        # If we can't determine the migration, use a default timestamp
+        # This will sort unknown models last
+        "99999999999999"
+      end
+
+      # Check if a migration file mentions a specific model or table
+      def migration_mentions_model?(file_path, model_class, table_name)
+        content = File.read(file_path)
+        model_name = model_class.name
+        # Use ActiveSupport's singularize if available, otherwise simple fallback
+        singular_table = table_name.respond_to?(:singularize) ? table_name.singularize : table_name.sub(/s$/, "")
+
+        # Look for various patterns that might indicate this migration created/uses this model
+        patterns = [
+          /\b#{model_name}\.create!?\s*[({]/,       # Model.create( or Model.create!( or with blocks
+          /\b#{model_name}\.new\s*[({]/,              # Model.new( or with blocks
+          /\b#{model_name}\.find/,                      # Model.find
+          /\b#{model_name}\.where/,                     # Model.where
+          /\b#{model_name}\.destroy_all/,               # Model.destroy_all
+          /^\s*#{model_name}\s/,                        # Model at start of line
+          /create_table\s+[:"']#{table_name}/,          # create_table :table_name
+          /create.*#{table_name}/,                      # General create table patterns
+          /add.*#{singular_table}/                     # Add model patterns
+        ]
+
+        patterns.any? { |pattern| content.match?(pattern) }
+      rescue => e
+        logger.debug "Could not read migration file #{file_path}: #{e.message}"
+        false
+      end
+
+      # Find the register entry for a given model
+      def find_register_entry_for_model(model_class)
+        SeedMigration.registrar.find { |entry| entry.model == model_class }
       end
     end
 
