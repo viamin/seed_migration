@@ -1,10 +1,12 @@
 module SeedMigration
   class RegisterEntry
     attr_reader :model_name
+    attr_accessor :migration_version
 
     def initialize(model)
       @model_name = model.to_s
       @excluded_attributes = []
+      @migration_version = nil
     end
 
     def exclude(*attrs)
