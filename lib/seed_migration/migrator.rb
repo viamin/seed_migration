@@ -1,5 +1,6 @@
 require "logger"
 require "pathname"
+require "ostruct"
 
 module SeedMigration
   class Migrator
@@ -276,18 +277,13 @@ module SeedMigration
             ActiveRecord::Base.transaction do
           EOS
 
-          # Process registered models first (sorted by migration introduction order)
-          # This preserves dependency order even when registrations are in an initializer
-          sorted_models = sort_registered_models_by_migration_order
+          # Get the existing order from seeds.rb if it exists, otherwise use registration order
+          existing_model_order = extract_model_order_from_existing_seeds
+          all_models_to_include = get_all_models_preserving_existing_order(existing_model_order, unregistered_with_data)
 
-          sorted_models.each do |model_class|
-            register_entry = find_register_entry_for_model(model_class)
-            process_model_for_seeds(file, model_class, register_entry) if register_entry
-          end
-
-          # Process any unregistered models with data (to preserve existing data)
-          unregistered_with_data.each do |model_class|
-            register_entry = find_or_create_register_entry(model_class)
+          # Process models in the preserved order
+          all_models_to_include.each do |model_class|
+            register_entry = find_register_entry_for_model(model_class) || create_temp_register_entry(model_class)
             process_model_for_seeds(file, model_class, register_entry)
           end
 
@@ -297,6 +293,94 @@ module SeedMigration
             SeedMigration::Migrator.bootstrap(#{last_migration})
           EOS
         end
+      end
+
+      # Extract the order of models from existing seeds.rb file
+      # This preserves the working order that's already in production
+      def extract_model_order_from_existing_seeds
+        return [] unless File.exist?(SEEDS_FILE_PATH)
+
+        content = File.read(SEEDS_FILE_PATH)
+        model_order = []
+
+        # Look for Model.create patterns and extract model names
+        content.scan(/^\s*(\w+)\.create[!(]/) do |match|
+          model_name = match[0]
+          # Skip internal migration tracking
+          next if model_name == "SeedMigration"
+
+          # Add to order if not already present (preserve first occurrence order)
+          model_order << model_name unless model_order.include?(model_name)
+        end
+
+        logger.info "Found existing seeds.rb model order: #{model_order.join(", ")}" if model_order.any?
+        model_order
+      end
+
+      # Get all models that need to be included, preserving existing order
+      def get_all_models_preserving_existing_order(existing_model_order, unregistered_with_data)
+        all_models = []
+        registered_models = SeedMigration.registrar.map(&:model)
+
+        # First, add models in the existing order (if they still exist and have registrations or data)
+        existing_model_order.each do |model_name|
+          model_class = model_name.constantize
+          if registered_models.include?(model_class) || unregistered_with_data.include?(model_class)
+            all_models << model_class
+          end
+        rescue NameError
+          # Model no longer exists, skip
+          logger.debug "Model #{model_name} from existing seeds.rb no longer exists, skipping"
+        end
+
+        # Then add any new registered models that weren't in the existing order
+        # Sort these by migration execution order (chronological), not registration order
+        new_registered_models = registered_models.reject { |model| all_models.include?(model) }
+        if new_registered_models.any?
+          sorted_new_models = sort_models_by_migration_execution_order(new_registered_models)
+          sorted_new_models.each do |model_class|
+            all_models << model_class
+            logger.info "Adding newly migrated model to end: #{model_class.name}"
+          end
+        end
+
+        # Finally add any new unregistered models with data (also sorted by migration order)
+        new_unregistered_models = unregistered_with_data.reject { |model| all_models.include?(model) }
+        if new_unregistered_models.any?
+          sorted_unregistered_models = sort_models_by_migration_execution_order(new_unregistered_models)
+          sorted_unregistered_models.each do |model_class|
+            all_models << model_class
+            logger.info "Adding unregistered model with migrated data to end: #{model_class.name}"
+          end
+        end
+
+        all_models
+      end
+
+      # Sort models by the chronological order of migration execution
+      # This ensures that models follow the dependency order from actual migration history
+      def sort_models_by_migration_execution_order(models)
+        return models if models.empty?
+
+        # Create model -> earliest_migration_timestamp mapping
+        model_timestamps = {}
+
+        models.each do |model_class|
+          timestamp = find_earliest_migration_for_model(model_class)
+          model_timestamps[model_class] = timestamp
+        end
+
+        # Sort by timestamp (chronological migration execution order)
+        models.sort_by { |model| model_timestamps[model] }
+      end
+
+      # Create a temporary register entry for unregistered models with data
+      def create_temp_register_entry(model_class)
+        # Create a register entry that includes all attributes
+        OpenStruct.new(
+          model: model_class,
+          attributes: model_class.attribute_names
+        )
       end
 
       # Process a single model for seed file generation
