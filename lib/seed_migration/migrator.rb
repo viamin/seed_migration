@@ -283,7 +283,14 @@ module SeedMigration
 
           # Process models in the preserved order
           all_models_to_include.each do |model_class|
-            register_entry = find_register_entry_for_model(model_class) || create_temp_register_entry(model_class)
+            register_entry = find_register_entry_for_model(model_class)
+
+            # If no current registration exists, try to determine what attributes
+            # were originally included by analyzing existing seeds.rb
+            if register_entry.nil?
+              register_entry = create_temp_register_entry_preserving_exclusions(model_class)
+            end
+
             process_model_for_seeds(file, model_class, register_entry)
           end
 
@@ -372,6 +379,52 @@ module SeedMigration
 
         # Sort by timestamp (chronological migration execution order)
         models.sort_by { |model| model_timestamps[model] }
+      end
+
+      # Create a temporary register entry for unregistered models with data
+      # This tries to preserve the original attribute exclusions by analyzing existing seeds.rb
+      def create_temp_register_entry_preserving_exclusions(model_class)
+        # First try to determine what attributes were originally included
+        # by analyzing the existing seeds.rb file
+        original_attributes = extract_attributes_from_existing_seeds(model_class)
+
+        if original_attributes.any?
+          # Use the attributes that were actually in the seeds.rb file
+          logger.debug "Preserving original attributes for #{model_class.name}: #{original_attributes.join(", ")}"
+          attributes_to_include = original_attributes
+        else
+          # Fallback to all attributes if we can't determine the original set
+          logger.warn "Could not determine original attributes for #{model_class.name}, using all attributes"
+          attributes_to_include = model_class.attribute_names
+        end
+
+        # Create a register entry that preserves the original exclusions
+        OpenStruct.new(
+          model: model_class,
+          attributes: attributes_to_include
+        )
+      end
+
+      # Extract the attributes that were actually used for a model in existing seeds.rb
+      def extract_attributes_from_existing_seeds(model_class)
+        return [] unless File.exist?(SEEDS_FILE_PATH)
+
+        content = File.read(SEEDS_FILE_PATH)
+        model_name = model_class.name
+        attributes = []
+
+        # Look for model creation lines and extract the attributes used
+        # Pattern matches: ModelName.create({"attr1"=>"value1", "attr2"=>"value2"})
+        content.scan(/^\s*#{model_name}\.create!?\(\{([^}]+)\}\)/) do |match|
+          attr_hash = match[0]
+          # Extract attribute names from the hash
+          attr_hash.scan(/"([^"]+)"\s*=>/) do |attr_match|
+            attr_name = attr_match[0]
+            attributes << attr_name unless attributes.include?(attr_name)
+          end
+        end
+
+        attributes
       end
 
       # Create a temporary register entry for unregistered models with data
