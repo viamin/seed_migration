@@ -33,6 +33,8 @@ DB=mysql bundle exec rake app:seed:migrate
 ```
 
 ### Development Commands
+
+**For the gem itself (Rails engine):**
 ```bash
 # Run seed migrations
 bundle exec rake app:seed:migrate
@@ -47,7 +49,19 @@ bundle exec rake app:seed:rollback
 bundle exec rake app:db:reset
 ```
 
-Note: Commands are prefixed with `app:` because this is a Rails engine.
+**For applications using the gem:**
+```bash
+# Run seed migrations
+bin/rails seed:migrate
+
+# Check migration status
+bin/rails seed:migrate:status
+
+# Rollback migrations
+bin/rails seed:rollback
+```
+
+Note: Engine commands are prefixed with `app:` because this is a Rails engine. Application commands use the standard Rails namespace.
 
 ## Architecture
 

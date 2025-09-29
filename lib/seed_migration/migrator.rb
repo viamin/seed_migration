@@ -272,9 +272,6 @@ module SeedMigration
           return
         end
 
-        # Load all migration files to capture their registrations
-        # This ensures that registrations from all executed migrations are available
-        load_all_executed_migration_registrations
 
         # First, check for and warn about unregistered models with data
         # This preserves data but warns the user about potential issues
@@ -311,20 +308,10 @@ module SeedMigration
           all_models_to_include.each do |model_class|
             register_entry = find_register_entry_for_model(model_class)
 
-            # Debug logging
-            logger.info "🔍 Processing #{model_class.name}"
-            logger.info "🔍 Total registrations: #{SeedMigration.registrar.length}"
-            SeedMigration.registrar.each do |entry|
-              logger.info "🔍 - #{entry.model.name} excludes: #{entry.instance_variable_get(:@excluded_attributes)}"
-            end
-
             # If no current registration exists, try to determine what attributes
             # were originally included by analyzing existing seeds.rb
             if register_entry.nil?
-              logger.warn "⚠️  No registration found for #{model_class.name}, falling back to temp entry"
               register_entry = create_temp_register_entry_preserving_exclusions(model_class)
-            else
-              logger.info "✅ Found registration for #{model_class.name} with excludes: #{register_entry.instance_variable_get(:@excluded_attributes)}"
             end
 
             process_model_for_seeds(file, model_class, register_entry)
@@ -426,12 +413,16 @@ module SeedMigration
 
         if original_attributes.any?
           # Use the attributes that were actually in the seeds.rb file
-          logger.debug "Preserving original attributes for #{model_class.name}: #{original_attributes.join(", ")}"
           attributes_to_include = original_attributes
         else
-          # Fallback to all attributes if we can't determine the original set
-          logger.warn "Could not determine original attributes for #{model_class.name}, using all attributes"
-          attributes_to_include = model_class.attribute_names
+          # If we can't determine original attributes, try to recreate the registration
+          # by looking for it in migration files
+          attributes_to_include = find_registration_in_migrations(model_class)
+
+          if attributes_to_include.nil?
+            # Final fallback to all attributes
+            attributes_to_include = model_class.attribute_names
+          end
         end
 
         # Create a register entry that preserves the original exclusions
@@ -658,27 +649,61 @@ module SeedMigration
         false
       end
 
-      # Load all executed migration files to capture their registrations
-      # This ensures that registrations from all executed migrations are available
-      def load_all_executed_migration_registrations
-        # Only run this if we don't have registrations
-        return if SeedMigration.registrar.any?
 
-        # Simple approach: just reload all executed migration files
-        # This will execute class-level registrations
+      # Find registration information for a model by scanning migration files
+      def find_registration_in_migrations(model_class)
+        model_name = model_class.name
+
         get_migration_files.each do |file_path|
           version, _ = parse_migration_filename(file_path)
 
-          # Only load executed migrations
-          if get_all_migration_versions.include?(version)
-            begin
-              # Just load the file - this handles class-level registrations
-              load file_path
-            rescue => e
-              logger.debug "Could not load migration file #{file_path}: #{e.message}"
+          # Only check executed migrations
+          next unless get_all_migration_versions.include?(version)
+
+          begin
+            content = File.read(file_path)
+
+            # Look for SeedMigration.register calls for this model
+            if content.match?(/SeedMigration\.register\s+#{model_name}/)
+              # Extract the registration block
+              registration_match = content.match(/SeedMigration\.register\s+#{model_name}(?:\s+do\s*\n(.*?)\n\s*end)?/m)
+
+              if registration_match && registration_match[1]
+                # Parse the block content for exclude statements
+                block_content = registration_match[1]
+                excluded_attributes = []
+
+                # Find exclude statements
+                block_content.scan(/exclude\s+([^\n]+)/) do |exclude_line|
+                  # Parse exclude arguments (supports :symbol, "string" formats)
+                  exclude_args = exclude_line[0].split(',').map(&:strip).map do |arg|
+                    if arg.start_with?(':')
+                      arg[1..-1] # Remove the :
+                    elsif arg.start_with?('"', "'")
+                      arg[1..-2] # Remove quotes
+                    else
+                      arg.strip
+                    end
+                  end
+
+                  excluded_attributes.concat(exclude_args)
+                end
+
+                # Return the attributes that should be included (all except excluded)
+                all_attributes = model_class.attribute_names
+                return all_attributes - excluded_attributes
+              else
+                # Simple registration without exclusions
+                return model_class.attribute_names
+              end
             end
+          rescue => e
+            logger.debug "Could not parse migration file #{file_path}: #{e.message}"
           end
         end
+
+        # Return nil if no registration found
+        nil
       end
 
       # Find the register entry for a given model
