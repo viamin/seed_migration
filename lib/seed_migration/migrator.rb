@@ -272,6 +272,10 @@ module SeedMigration
           return
         end
 
+        # Load all migration files to capture their registrations
+        # This ensures that registrations from all executed migrations are available
+        load_all_executed_migration_registrations
+
         # First, check for and warn about unregistered models with data
         # This preserves data but warns the user about potential issues
         discovered_models = discover_models_from_database
@@ -642,6 +646,76 @@ module SeedMigration
       rescue => e
         logger.debug "Could not read migration file #{file_path}: #{e.message}"
         false
+      end
+
+      # Load all executed migration files to capture their registrations
+      # This ensures that registrations from all executed migrations are available
+      def load_all_executed_migration_registrations
+        # If we already have registrations, we're probably being called from within
+        # a migration run, so don't reload
+        return unless SeedMigration.registrar.empty?
+
+        get_migration_files.each do |file_path|
+          version, _ = parse_migration_filename(file_path)
+
+          # Only load executed migrations
+          if get_all_migration_versions.include?(version)
+            begin
+              # Set the migration version context
+              SeedMigration.current_migration_version = version
+
+              # Load the migration file to get the class and instantiate it
+              require file_path
+              filename = File.basename(file_path, ".rb")
+              classname_and_extension = filename.split("_", 2).last
+              classname = classname_and_extension.split(".").first.camelize
+              migration_class = classname.constantize
+
+              # Create migration instance and capture registrations
+              # We'll override model methods to prevent actual data changes
+              migration_instance = migration_class.new
+
+              # Execute the migration to capture registrations
+              # We'll temporarily stub out model methods to prevent actual data changes
+              stubbed_methods = {}
+
+              ActiveRecord::Base.descendants.each do |model_class|
+                next unless model_class.name # Skip anonymous classes
+
+                # Store original methods
+                stubbed_methods[model_class] = {}
+                [:create, :create!, :where, :destroy_all].each do |method_name|
+                  if model_class.respond_to?(method_name)
+                    stubbed_methods[model_class][method_name] = model_class.method(method_name)
+                  end
+                end
+
+                # Override with no-op methods
+                model_class.define_singleton_method(:create) { |*args, &block| new }
+                model_class.define_singleton_method(:create!) { |*args, &block| new }
+                model_class.define_singleton_method(:where) { |*args| none }
+                model_class.define_singleton_method(:destroy_all) { |*args| }
+              end
+
+              # Execute the migration to capture registrations
+              migration_instance.up
+
+              # Restore original methods
+              stubbed_methods.each do |model_class, methods|
+                methods.each do |method_name, original_method|
+                  model_class.define_singleton_method(method_name, original_method)
+                end
+              end
+
+            rescue => e
+              # If we can't load/execute the migration, ignore it
+              logger.debug "Could not load registrations from #{file_path}: #{e.message}"
+            ensure
+              # Clear the migration version context
+              SeedMigration.current_migration_version = nil
+            end
+          end
+        end
       end
 
       # Find the register entry for a given model
