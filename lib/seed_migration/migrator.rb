@@ -272,6 +272,11 @@ module SeedMigration
           return
         end
 
+        # Ensure registrations are loaded when running in rake task context
+        # In rake tasks, to_prepare blocks may not execute, so we need to
+        # manually trigger the loading of registrations
+        ensure_registrations_loaded
+
 
         # First, check for and warn about unregistered models with data
         # This preserves data but warns the user about potential issues
@@ -415,14 +420,8 @@ module SeedMigration
           # Use the attributes that were actually in the seeds.rb file
           attributes_to_include = original_attributes
         else
-          # If we can't determine original attributes, try to recreate the registration
-          # by looking for it in migration files
-          attributes_to_include = find_registration_in_migrations(model_class)
-
-          if attributes_to_include.nil?
-            # Final fallback to all attributes
-            attributes_to_include = model_class.attribute_names
-          end
+          # Final fallback to all attributes if we can't determine the original set
+          attributes_to_include = model_class.attribute_names
         end
 
         # Create a register entry that preserves the original exclusions
@@ -650,72 +649,35 @@ module SeedMigration
       end
 
 
-      # Find registration information for a model by scanning migration files
-      def find_registration_in_migrations(model_class)
-        model_name = model_class.name
 
-        get_migration_files.each do |file_path|
-          version, _ = parse_migration_filename(file_path)
+      # Ensure that model registrations are loaded
+      # This handles the case where registrations are in to_prepare blocks
+      # which may not execute during rake tasks
+      def ensure_registrations_loaded
+        # If we already have registrations, assume they're loaded
+        return if SeedMigration.registrar.any?
 
-          # Only check executed migrations
-          next unless get_all_migration_versions.include?(version)
-
+        # In rake task context, to_prepare blocks might not have run
+        # Look for seed_migration.rb initializer and load it manually
+        initializer_path = Rails.root.join("config", "initializers", "seed_migration.rb")
+        if File.exist?(initializer_path)
           begin
-            content = File.read(file_path)
-
-            # Look for SeedMigration.register calls for this model
-            if content.match?(/SeedMigration\.register\s+#{model_name}/)
-              logger.debug "Found registration for #{model_name} in #{file_path}"
-
-              # Extract the registration block
-              registration_match = content.match(/SeedMigration\.register\s+#{model_name}(?:\s+do\s*\n(.*?)\n\s*end)?/m)
-
-              if registration_match && registration_match[1]
-                # Parse the block content for exclude statements
-                block_content = registration_match[1]
-                excluded_attributes = []
-
-                logger.debug "Block content: #{block_content}"
-
-                # Find exclude statements
-                block_content.scan(/exclude\s+([^\n]+)/) do |exclude_line|
-                  logger.debug "Found exclude line: #{exclude_line[0]}"
-
-                  # Parse exclude arguments (supports :symbol, "string" formats)
-                  exclude_args = exclude_line[0].split(',').map(&:strip).map do |arg|
-                    if arg.start_with?(':')
-                      arg[1..-1] # Remove the :
-                    elsif arg.start_with?('"', "'")
-                      arg[1..-2] # Remove quotes
-                    else
-                      arg.strip
-                    end
-                  end
-
-                  excluded_attributes.concat(exclude_args)
-                end
-
-                logger.debug "Excluded attributes: #{excluded_attributes}"
-
-                # Return the attributes that should be included (all except excluded)
-                all_attributes = model_class.attribute_names
-                included_attributes = all_attributes - excluded_attributes
-                logger.debug "Included attributes: #{included_attributes}"
-                return included_attributes
-              else
-                # Simple registration without exclusions
-                logger.debug "Simple registration without exclusions"
-                return model_class.attribute_names
-              end
-            end
+            # Load the initializer which should register models
+            load initializer_path
           rescue => e
-            logger.debug "Could not parse migration file #{file_path}: #{e.message}"
+            logger.debug "Could not load seed_migration initializer: #{e.message}"
           end
         end
 
-        # Return nil if no registration found
-        logger.debug "No registration found for #{model_name} in any migration files"
-        nil
+        # Also try loading any other initializers that might have registrations
+        Dir.glob(Rails.root.join("config", "initializers", "*seed*migration*.rb")).each do |file|
+          next if file == initializer_path.to_s # Already tried this one
+          begin
+            load file
+          rescue => e
+            logger.debug "Could not load initializer #{file}: #{e.message}"
+          end
+        end
       end
 
       # Find the register entry for a given model
