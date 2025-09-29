@@ -665,6 +665,8 @@ module SeedMigration
 
             # Look for SeedMigration.register calls for this model
             if content.match?(/SeedMigration\.register\s+#{model_name}/)
+              logger.debug "Found registration for #{model_name} in #{file_path}"
+
               # Extract the registration block
               registration_match = content.match(/SeedMigration\.register\s+#{model_name}(?:\s+do\s*\n(.*?)\n\s*end)?/m)
 
@@ -673,8 +675,12 @@ module SeedMigration
                 block_content = registration_match[1]
                 excluded_attributes = []
 
+                logger.debug "Block content: #{block_content}"
+
                 # Find exclude statements
                 block_content.scan(/exclude\s+([^\n]+)/) do |exclude_line|
+                  logger.debug "Found exclude line: #{exclude_line[0]}"
+
                   # Parse exclude arguments (supports :symbol, "string" formats)
                   exclude_args = exclude_line[0].split(',').map(&:strip).map do |arg|
                     if arg.start_with?(':')
@@ -689,11 +695,16 @@ module SeedMigration
                   excluded_attributes.concat(exclude_args)
                 end
 
+                logger.debug "Excluded attributes: #{excluded_attributes}"
+
                 # Return the attributes that should be included (all except excluded)
                 all_attributes = model_class.attribute_names
-                return all_attributes - excluded_attributes
+                included_attributes = all_attributes - excluded_attributes
+                logger.debug "Included attributes: #{included_attributes}"
+                return included_attributes
               else
                 # Simple registration without exclusions
+                logger.debug "Simple registration without exclusions"
                 return model_class.attribute_names
               end
             end
@@ -703,6 +714,7 @@ module SeedMigration
         end
 
         # Return nil if no registration found
+        logger.debug "No registration found for #{model_name} in any migration files"
         nil
       end
 
