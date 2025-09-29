@@ -4,6 +4,7 @@
     ".": {
       "release-type": "ruby",
       "package-name": "seed-migration",
+      "version-file": "lib/seed_migration/version.rb",
       "changelog-sections": [
         {
           "type": "feat",
