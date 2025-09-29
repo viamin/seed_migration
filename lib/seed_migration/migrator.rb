@@ -123,15 +123,37 @@ module SeedMigration
 
     def self.display_migrations_status
       logger.info "\ndatabase: #{ActiveRecord::Base.connection_db_config.database}\n\n"
+
+      # Debug: Show what we're finding
+      migration_files = get_migration_files
+      up_versions = get_all_migration_versions
+
+      logger.info "🔍 DEBUG: Found #{migration_files.length} migration files in #{data_migration_directory}"
+      logger.info "🔍 DEBUG: Found #{up_versions.length} completed migrations in database"
+
+      if migration_files.empty?
+        logger.info "⚠️  No migration files found in #{data_migration_directory}"
+        logger.info "   Make sure your data migration files exist in db/#{SeedMigration.migrations_path}/"
+        return
+      end
+
       logger.info "#{"Status".center(8)}  #{"Migration ID".ljust(14)}  Migration Name"
       logger.info "-" * 50
 
-      up_versions = get_all_migration_versions
-      get_migration_files.each do |file|
+      migration_files.each do |file|
         version, name = parse_migration_filename(file)
         status = up_versions.include?(version) ? "up" : "down"
         logger.info "#{status.center(8)}  #{version.ljust(14)}  #{name}"
       end
+
+      # Summary
+      up_count = migration_files.count { |file|
+        version, _ = parse_migration_filename(file)
+        up_versions.include?(version)
+      }
+      down_count = migration_files.length - up_count
+
+      logger.info "\n#{up_count} migrations up, #{down_count} migrations down"
     end
 
     def self.bootstrap(last_timestamp = nil)
