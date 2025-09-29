@@ -311,10 +311,20 @@ module SeedMigration
           all_models_to_include.each do |model_class|
             register_entry = find_register_entry_for_model(model_class)
 
+            # Debug logging
+            logger.info "🔍 Processing #{model_class.name}"
+            logger.info "🔍 Total registrations: #{SeedMigration.registrar.length}"
+            SeedMigration.registrar.each do |entry|
+              logger.info "🔍 - #{entry.model.name} excludes: #{entry.instance_variable_get(:@excluded_attributes)}"
+            end
+
             # If no current registration exists, try to determine what attributes
             # were originally included by analyzing existing seeds.rb
             if register_entry.nil?
+              logger.warn "⚠️  No registration found for #{model_class.name}, falling back to temp entry"
               register_entry = create_temp_register_entry_preserving_exclusions(model_class)
+            else
+              logger.info "✅ Found registration for #{model_class.name} with excludes: #{register_entry.instance_variable_get(:@excluded_attributes)}"
             end
 
             process_model_for_seeds(file, model_class, register_entry)
@@ -651,68 +661,21 @@ module SeedMigration
       # Load all executed migration files to capture their registrations
       # This ensures that registrations from all executed migrations are available
       def load_all_executed_migration_registrations
-        # If we already have registrations, we're probably being called from within
-        # a migration run, so don't reload
-        return unless SeedMigration.registrar.empty?
+        # Only run this if we don't have registrations
+        return if SeedMigration.registrar.any?
 
+        # Simple approach: just reload all executed migration files
+        # This will execute class-level registrations
         get_migration_files.each do |file_path|
           version, _ = parse_migration_filename(file_path)
 
           # Only load executed migrations
           if get_all_migration_versions.include?(version)
             begin
-              # Set the migration version context
-              SeedMigration.current_migration_version = version
-
-              # Load the migration file to get the class and instantiate it
-              require file_path
-              filename = File.basename(file_path, ".rb")
-              classname_and_extension = filename.split("_", 2).last
-              classname = classname_and_extension.split(".").first.camelize
-              migration_class = classname.constantize
-
-              # Create migration instance and capture registrations
-              # We'll override model methods to prevent actual data changes
-              migration_instance = migration_class.new
-
-              # Execute the migration to capture registrations
-              # We'll temporarily stub out model methods to prevent actual data changes
-              stubbed_methods = {}
-
-              ActiveRecord::Base.descendants.each do |model_class|
-                next unless model_class.name # Skip anonymous classes
-
-                # Store original methods
-                stubbed_methods[model_class] = {}
-                [:create, :create!, :where, :destroy_all].each do |method_name|
-                  if model_class.respond_to?(method_name)
-                    stubbed_methods[model_class][method_name] = model_class.method(method_name)
-                  end
-                end
-
-                # Override with no-op methods
-                model_class.define_singleton_method(:create) { |*args, &block| new }
-                model_class.define_singleton_method(:create!) { |*args, &block| new }
-                model_class.define_singleton_method(:where) { |*args| none }
-                model_class.define_singleton_method(:destroy_all) { |*args| }
-              end
-
-              # Execute the migration to capture registrations
-              migration_instance.up
-
-              # Restore original methods
-              stubbed_methods.each do |model_class, methods|
-                methods.each do |method_name, original_method|
-                  model_class.define_singleton_method(method_name, original_method)
-                end
-              end
-
+              # Just load the file - this handles class-level registrations
+              load file_path
             rescue => e
-              # If we can't load/execute the migration, ignore it
-              logger.debug "Could not load registrations from #{file_path}: #{e.message}"
-            ensure
-              # Clear the migration version context
-              SeedMigration.current_migration_version = nil
+              logger.debug "Could not load migration file #{file_path}: #{e.message}"
             end
           end
         end
