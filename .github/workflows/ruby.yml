@@ -33,7 +33,7 @@ jobs:
     steps:
     - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
     - name: Install ruby
-      uses: ruby/setup-ruby@8aeb6ff8030dd539317f8e1769a044873b56ea71
+      uses: ruby/setup-ruby@d697be2f83c6234b20877c3b5eac7a7f342f0d0c
       with:
         ruby-version: "${{ matrix.ruby }}"
         bundler-cache: true
@@ -76,7 +76,7 @@ jobs:
     steps:
     - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
     - name: Install ruby
-      uses: ruby/setup-ruby@8aeb6ff8030dd539317f8e1769a044873b56ea71
+      uses: ruby/setup-ruby@d697be2f83c6234b20877c3b5eac7a7f342f0d0c
       with:
         ruby-version: "${{ matrix.ruby }}"
         bundler-cache: true
@@ -106,7 +106,7 @@ jobs:
     steps:
     - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
     - name: Install ruby
-      uses: ruby/setup-ruby@8aeb6ff8030dd539317f8e1769a044873b56ea71
+      uses: ruby/setup-ruby@d697be2f83c6234b20877c3b5eac7a7f342f0d0c
       with:
         ruby-version: "${{ matrix.ruby }}"
         bundler-cache: true
